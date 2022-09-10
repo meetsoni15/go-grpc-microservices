@@ -1,0 +1,141 @@
+version: '3.9'
+
+services:
+  go-grpc-api-gateway:
+    build:
+      context: ./../go-grpc-api-gateway
+      dockerfile: ./../go-grpc-api-gateway/Dockerfile
+    environment:
+      PORT: :3000
+      AUTH_SVC_URL: go-grpc-auth-svc:50051
+      PRODUCT_SVC_URL: go-grpc-product-svc:50052
+      ORDER_SVC_URL: go-grpc-order-svc:50053
+    ports:
+      - 3000:3000
+    depends_on:
+      - go-grpc-auth-svc
+      - go-grpc-product-svc
+      - go-grpc-order-svc
+    links:
+      - go-grpc-auth-svc
+      - go-grpc-product-svc
+      - go-grpc-order-svc
+    restart: 
+      on-failure
+    deploy:
+      mode: replicated
+      replicas: 1       
+
+  go-grpc-auth-svc:
+    build:
+      context: ./../go-grpc-auth-svc
+      dockerfile: ./../go-grpc-auth-svc/Dockerfile
+    environment:
+      ENVRIONMENT: DOCKER
+      PORT: :50051
+      DB_URL: postgres://postgres:password@postgres_auth:5432/auth_svc
+      JWT_SECRET_KEY: r43t18sc
+    ports:
+      - 50051:50051
+    depends_on:
+      - postgres_auth
+    links:
+      - "postgres_auth"
+    restart: 
+      on-failure
+    deploy:
+      mode: replicated
+      replicas: 1     
+
+  postgres_auth:
+    image: postgres:14.2
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth_svc
+    ports:
+      - "5434:5432"
+    deploy:
+      mode: replicated
+      replicas: 1   
+    volumes:
+      - ./docker-data/postgres/:/var/lib/postgresql/data/
+
+  
+  go-grpc-product-svc:
+    build:
+      context: ./../go-grpc-product-svc
+      dockerfile: ./../go-grpc-product-svc/Dockerfile
+    environment:
+      ENVRIONMENT: DOCKER
+      PORT: :50052
+      DB_URL: postgres://postgres:password@postgres_product:5432/product_svc
+    ports:
+      - 50052:50052
+    depends_on:
+      - postgres_product
+    links:
+      - "postgres_product"
+    restart: 
+      on-failure
+    deploy:
+      mode: replicated
+      replicas: 1
+  
+  postgres_product:
+    image: postgres:14.2
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: product_svc
+    ports:
+      - "5435:5432"
+    deploy:
+      mode: replicated
+      replicas: 1   
+    volumes:
+      - ./docker-data/postgres_product/:/var/lib/postgresql/data/ 
+
+  go-grpc-order-svc:
+    build:
+      context: ./../go-grpc-order-svc
+      dockerfile: ./../go-grpc-order-svc/Dockerfile    
+    environment:
+      ENVRIONMENT: DOCKER
+      PORT: :50053
+      DB_URL: postgres://postgres:password@postgres_order:5432/order_svc
+      PRODUCT_SVC_URL: go-grpc-product-svc:50052
+    ports:
+      - 50053:50053
+    depends_on:
+      - postgres_order
+      - go-grpc-product-svc
+    links:
+      - "postgres_order"
+      - "go-grpc-product-svc"
+    restart: 
+      on-failure
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  postgres_order:
+    image: postgres:14.2
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: order_svc
+    ports:
+      - "5436:5432"
+    deploy:
+      mode: replicated
+      replicas: 1   
+    volumes:
+      - ./docker-data/postgres_order/:/var/lib/postgresql/data/            
+
+volumes:
+  db-data:
+    driver: local

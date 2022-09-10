@@ -1,0 +1,95 @@
+###API GATEWAY CONFIGMAP
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-grpc-api-gateway-config
+data:
+  PORT: :3000
+  AUTH_SVC_URL: go-grpc-auth-svc:50051
+  PRODUCT_SVC_URL: go-grpc-product-svc:50052
+  ORDER_SVC_URL: go-grpc-order-svc:50053
+---
+###API GATEWAY DEPLOYMENT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-grpc-api-gateway-svc
+  labels: 
+    app_name: go-grpc-project
+    app: go-grpc-api-gateway
+    tier: svc
+spec:
+  selector:
+    matchLabels:
+      app: go-grpc-api-gateway
+      tier: svc
+  template:
+    metadata:
+      labels:
+        app: go-grpc-api-gateway
+        tier: svc
+    spec:
+      initContainers:
+      - name: wait-go-grpc-auth-svc
+        image: alpine
+        command: ["/bin/sh", "-c", "for i in $(seq 1 300); do nc -zvw1 go-grpc-auth-svc 50051 && exit 0 || sleep 5; done; exit 1"]
+      - name: wait-go-grpc-product-svc
+        image: alpine
+        command: ["/bin/sh", "-c", "for i in $(seq 1 300); do nc -zvw1 go-grpc-product-svc 50052 && exit 0 || sleep 5; done; exit 1"]
+      # - name: wait-go-grpc-order-svc
+      #   image: alpine
+      #   command: ["/bin/sh", "-c", "for i in $(seq 1 300); do nc -zvw1 go-grpc-order-svc 50053 && exit 0 || sleep 5; done; exit 1"]    
+      containers:
+      - name: go-grpc-api-gateway
+        image: utils-go-grpc-api-gateway
+        imagePullPolicy: Never
+        env:
+          - name: PORT
+            valueFrom:
+              configMapKeyRef:
+                name: go-grpc-api-gateway-config
+                key: PORT
+          - name: AUTH_SVC_URL
+            valueFrom:
+              configMapKeyRef:
+                name: go-grpc-api-gateway-config
+                key: AUTH_SVC_URL
+          - name: PRODUCT_SVC_URL
+            valueFrom:
+              configMapKeyRef:
+                name: go-grpc-api-gateway-config
+                key: PRODUCT_SVC_URL
+          - name: ORDER_SVC_URL
+            valueFrom:
+              configMapKeyRef:
+                name: go-grpc-api-gateway-config
+                key: ORDER_SVC_URL                  
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "256m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 3000
+          name: gateway-port
+---
+###GO-GRPC-API-GATEWAY-SERVICE
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-grpc-api-gateway
+spec:
+  type: LoadBalancer
+  externalIPs:
+    - "49.36.81.110"
+    - "192.168.29.14"
+  selector:
+    app: go-grpc-api-gateway
+    tier: svc
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: gateway-port
+    protocol: TCP

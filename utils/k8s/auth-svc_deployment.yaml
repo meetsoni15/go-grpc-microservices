@@ -1,0 +1,77 @@
+###AUTH SVC CONFIGMAP
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: go-grpc-auth-svc-config
+data:
+  PORT: :50051
+  DB_URL: postgres://postgres:password@postgres-auth:5432/auth_svc
+  JWT_SECRET_KEY: r43t18sc
+---
+###AUTH SVC DEPLOYMENT
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-grpc-auth-svc
+  labels:
+    app_name: go-grpc-project
+    app: go-grpc-auth-svc
+    tier: svc
+spec:
+  selector:
+    matchLabels:
+      app: go-grpc-auth-svc
+      tier: svc
+  template:
+    metadata:
+      labels:
+        app: go-grpc-auth-svc
+        tier: svc
+    spec:
+      initContainers:
+        - name: init-wait-for-db
+          image: alpine
+          command: ["/bin/sh", "-c", "for i in $(seq 1 300); do nc -zvw1 postgres-auth 5432 && exit 0 || sleep 3; done; exit 1"]
+      containers:
+      - name: go-grpc-auth-svc
+        image: utils-go-grpc-auth-svc
+        imagePullPolicy: Never
+        resources:
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+        ports:
+        - containerPort: 50051
+        env:
+            - name: ENVRIONMENT
+              value: K8S
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: go-grpc-auth-svc-config
+                  key: PORT
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: go-grpc-auth-svc-config
+                  key: JWT_SECRET_KEY
+            - name: DB_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: go-grpc-auth-svc-config
+                  key: DB_URL
+---
+###AUTH SVC SERVICE
+apiVersion: v1
+kind: Service
+metadata:
+  name: go-grpc-auth-svc
+spec:
+  selector:
+    app: go-grpc-auth-svc
+    tier: svc
+  ports:
+    - port: 50051
+      targetPort: 50051
+      name: auth-svc
+      protocol: TCP

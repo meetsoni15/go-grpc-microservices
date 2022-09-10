@@ -1,0 +1,270 @@
+basePath: /
+consumes:
+    - application/json
+definitions:
+    CreateProductRequestBody:
+        properties:
+            name:
+                description: Product name
+                example: Macbook pro M1 Pro
+                type: string
+                x-go-name: Name
+            price:
+                description: Price of particular product
+                example: 229000
+                format: int64
+                type: integer
+                x-go-name: Price
+            stock:
+                description: Quantity of product that will be inventory
+                example: 13
+                format: int64
+                type: integer
+                x-go-name: Stock
+        required:
+            - name
+            - stock
+            - price
+        type: object
+        x-go-package: github.com/meetsoni1511/go-grpc-api-gateway/pkg/product/routes
+    ErrorResponse:
+        properties:
+            error:
+                type: string
+                x-go-name: Error
+        type: object
+        x-go-package: github.com/meetsoni1511/go-grpc-api-gateway/docs
+    LoginRequestBody:
+        properties:
+            email:
+                description: the Email for this user
+                example: meet@me.soni
+                format: email
+                type: string
+                x-go-name: Email
+            password:
+                description: the Password for this user
+                example: meet@1234
+                format: password
+                maximum: 15
+                minimum: 8
+                type: string
+                x-go-name: Password
+        required:
+            - email
+            - password
+        type: object
+        x-go-package: github.com/meetsoni1511/go-grpc-api-gateway/pkg/auth/routes
+    LoginResponseBody:
+        properties:
+            error:
+                description: Error if any
+                type: string
+                x-go-name: Error
+            status:
+                description: Return status code if any
+                example: 200
+                format: int64
+                type: integer
+                x-go-name: Status
+            token:
+                description: JWT Authentication token
+                example: token.header.info
+                type: string
+                x-go-name: Token
+        type: object
+        x-go-package: github.com/meetsoni1511/go-grpc-api-gateway/pkg/auth/routes
+    RegisterRequestBody:
+        properties:
+            email:
+                description: the Email for this user
+                type: string
+                x-go-name: Email
+            password:
+                description: the Password for this user
+                type: string
+                x-go-name: Password
+        required:
+            - email
+            - password
+        type: object
+        x-go-package: github.com/meetsoni1511/go-grpc-api-gateway/pkg/auth/routes
+    ThingResponse:
+        properties:
+            created:
+                description: The time a thing was created
+                example: "2021-05-25T00:53:16.535668Z"
+                format: date-time
+                type: string
+                x-go-name: Created
+            name:
+                description: The Name of a thing
+                example: Some name
+                type: string
+                x-go-name: Name
+            updated:
+                description: The last time a thing was updated
+                example: "2021-05-25T00:53:16.535668Z"
+                format: date-time
+                type: string
+                x-go-name: Updated
+            uuid:
+                description: The UUID of a thing
+                example: 6204037c-30e6-408b-8aaa-dd8219860b4b
+                type: string
+                x-go-name: UUID
+            value:
+                description: The Value of a thing
+                example: Some value
+                type: string
+                x-go-name: Value
+        type: object
+        x-go-package: github.com/meetsoni1511/go-grpc-api-gateway/docs
+host: dashboard.me
+info:
+    contact:
+        email: meet@meet.meet
+        name: Meet Soni
+        url: http://meet.meet.me
+    description: |-
+        the purpose of this application is to provide an application
+        that is using plain go code to define an API
+
+        This should demonstrate all the possible comment annotations
+        that are available to turn go code into a fully compliant swagger 2.0 spec
+    license:
+        name: MIT
+        url: http://opensource.org/licenses/MIT
+    title: Go-GRPC-API-GATEWAY.
+    version: 0.1.0
+paths:
+    /api/product:
+        post:
+            description: Create Product
+            operationId: createProduct
+            parameters:
+                - description: Login Request Body
+                  in: body
+                  name: login
+                  schema:
+                    $ref: '#/definitions/CreateProductRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: ThingResponse
+                    schema:
+                        $ref: '#/definitions/ThingResponse'
+                "401":
+                    description: Invalid Username || Password
+                "404":
+                    description: User not found
+                "500":
+                    description: Internal Server Error
+            summary: Create Product
+            tags:
+                - Auth
+    /auth/login:
+        post:
+            description: User Login
+            operationId: userLogin
+            parameters:
+                - description: The body
+                  in: body
+                  name: Body
+                  schema:
+                    $ref: '#/definitions/LoginRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/LoginResponseBody'
+                "401":
+                    description: Invalid Username || Password
+                "404":
+                    description: User not found
+                "500":
+                    description: Internal Server Error
+            summary: User login
+            tags:
+                - Auth
+    /auth/register:
+        post:
+            description: User Registration
+            operationId: userRegister
+            parameters:
+                - description: Register Request Body
+                  in: body
+                  name: register
+                  schema:
+                    $ref: '#/definitions/RegisterRequestBody'
+            produces:
+                - application/json
+            responses:
+                "201":
+                    description: successful operation
+                    schema:
+                        $ref: '#/definitions/RegisterRequestBody'
+                "400":
+                    description: Invalid id supplied
+                "404":
+                    description: User not found
+            summary: User register
+            tags:
+                - Auth
+    /thing/{uuidaaa}:
+        get:
+            description: Create Product
+            operationId: createProduct
+            parameters:
+                - description: Login Request Body
+                  in: body
+                  name: login
+                  schema:
+                    $ref: '#/definitions/CreateProductRequestBody'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: ThingResponse
+                    schema:
+                        $ref: '#/definitions/ThingResponse'
+                "401":
+                    description: Invalid Username || Password
+                "404":
+                    description: User not found
+                "500":
+                    description: Internal Server Error
+            summary: Create Product
+            tags:
+                - Auth
+produces:
+    - application/json
+responses:
+    validationError:
+        description: A ValidationError is an error that is used when the required input fails validation.
+        schema:
+            properties:
+                FieldName:
+                    description: An optional field name to which this validation applies
+                    type: string
+                Message:
+                    description: The validation message
+                    example: Expected type int
+                    type: string
+            required:
+                - Message
+            type: object
+schemes:
+    - http
+security:
+    - JWT:
+        - '[]'
+securityDefinitions:
+    JWT:
+        in: header
+        name: Authorization
+        type: apiKey
+swagger: "2.0"

@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: go-grpc-product-svc-db
+  labels:
+    app_name: go-grpc-project
+    app: go-grpc-product-svc-db
+    tier: db
+spec:
+  selector:
+    matchLabels:
+      app: go-grpc-product-svc-db
+      tier: db
+  serviceName: go-grpc-product-svc-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: go-grpc-product-svc-db
+        tier: db
+    spec:
+      containers:
+      - name: postgres-product
+        image: postgres:14.2
+        ports:
+        - containerPort: 5432
+          name: dbport
+        env:
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                key: POSTGRES_USER
+                name: postgres-secret
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: POSTGRES_PASS
+                name: postgres-secret
+          - name: POSTGRES_DB
+            value: product_svc
+        volumeMounts:
+        - name: postgres-product-pvc
+          mountPath: /var/lib/postgresql/data/
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-product-pvc
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-product
+spec:
+  selector:
+    app: go-grpc-product-svc-db
+    tier: db
+  ports:
+  - port: 5432
+    targetPort: 5432

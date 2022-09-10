@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: go-grpc-order-svc-db
+  labels:
+    app_name: go-grpc-project
+    app: go-grpc-order-svc-db
+    tier: db
+spec:
+  selector:
+    matchLabels:
+      app: go-grpc-order-svc-db
+      tier: db
+  serviceName: go-grpc-order-svc-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: go-grpc-order-svc-db
+        tier: db
+    spec:
+      containers:
+      - name: postgres-order
+        image: postgres:14.2
+        ports:
+        - containerPort: 5432
+          name: dbport
+        env:
+          - name: POSTGRES_USER
+            valueFrom:
+              secretKeyRef:
+                key: POSTGRES_USER
+                name: postgres-secret
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: POSTGRES_PASS
+                name: postgres-secret
+          - name: POSTGRES_DB
+            value: order_svc
+        volumeMounts:
+        - name: postgres-order-pvc
+          mountPath: /var/lib/postgresql/data/
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-order-pvc
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-order
+spec:
+  selector:
+    app: go-grpc-order-svc-db
+    tier: db
+  ports:
+  - port: 5432
+    targetPort: 5432
