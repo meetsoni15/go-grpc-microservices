@@ -1,2 +1,2 @@
-# go-grpc-project
+# Go GRPC Microservice
 GO Grpc Microservice
